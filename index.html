@@ -4,7 +4,7 @@
   <script type="text/javascript" id="MathJax-script" async
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
-b
+
 
 
   <meta charset="utf-8">
@@ -234,463 +234,445 @@ b
 
 
 <div class="columns is-vcentered">
-  <!-- Image Column: Grows to take remaining space -->
+  <!-- Main Figure -->
   <div class="column">
     <div class="image-container" style="text-align: center;">
-      <img src="assets/images/main_fig1.jpg" alt="Main Figure 1" style="max-width: 90%; height: auto;">
+      <!-- Use Figure 1 from the paper (page 1). Save as assets/images/main_fig1_multi.jpg -->
+      <img src="assets/images/main_fig_1.png" alt="Figure 1: Multi-Answer RL Overview" style="max-width: 90%; height: auto;">
+      <p class="is-size-7" style="margin-top: 0.4rem; color: #666;">
+        <strong>Figure 1.</strong> Standard RL collapses to a single mode; Multi-Answer RL trains the model to output a distribution of plausible answers.
+      </p>
     </div>
   </div>
 
-  <!-- Narrow TOC Column -->
-  <div class="column is-narrow" style="max-width: 180px; padding-left: 1rem; border-left: 1px solid #ccc;">
+  <!-- TOC -->
+  <div class="column is-narrow" style="max-width: 210px; padding-left: 1rem; border-left: 1px solid #ccc;">
     <div class="table-of-contents">
       <h3><strong><u>Table of Contents</u></strong></h3>
       <ul>
         <li><a href="#intro">Intro</a></li>
-        <li><a href="#examples">Examples</a></li>
-        <li><a href="#our-idea">Method</a></li>
+        <li><a href="#why-single-answer">Single-Answer RL Fails</a></li>
+        <li><a href="#our-idea">Our Idea</a></li>
+        <li><a href="#multi-rlvr">Multi-RLVR</a></li>
+        <li><a href="#multi-rlcr">Multi-RLCR</a></li>
         <li><a href="#results">Results</a></li>
-        <li><a href="#test-time-scaling">Test-Time Scaling</a></li>
-        <li><a href="#uncertainty-cot">Uncertainty CoT</a></li>
+        <li><a href="#diversity">Diversity</a></li>
+        <li><a href="#efficiency">Efficiency</a></li>
+        <li><a href="#scaling-k">Scaling with K</a></li>
+        <li><a href="#calibration">Calibration</a></li>
+        <li><a href="#takeaway">Takeaway</a></li>
         <li><a href="#BibTeX">BibTeX</a></li>
         <li><a href="#Code">Code</a></li>
-        <li><a href="#Slides">Talk Slides</a></li>
       </ul>
     </div>
   </div>
 </div>
 
-
-
-
-
-
-<section id="why-rlcr" class="section" style="font-family: 'DM Sans', sans-serif;">
+<!-- ===================== SECTION: INTRO ===================== -->
+<section id="intro" class="section" style="font-family: 'DM Sans', sans-serif;">
   <div class="container">
     <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
       <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-      <h2 class="title" style="text-align: center;">Intro</h2>
+      <h2 class="title is-3 has-text-centered">Intro</h2>
 
       <div class="content">
-        <!-- Float image right with appropriate styling -->
-        <img src="assets/images/exampleOutputs.jpg" alt="Example Outputs"
-             style="float: right; width: 70%; margin-left: 20px; margin-bottom: 10px; max-width: 100%; height: auto;">
-
         <p>
-          Recent advances in reasoning training — particularly <strong>RL with verifiable rewards (RLVR)</strong> — have improved the accuracy of large language models (LLMs). These approaches optimize for correctness, encouraging models to output the right answer when possible.
+          Modern language models are typically post-trained via RL to produce a <strong>single best answer</strong> per query.
+          This matches benchmark evaluation—where exactly one answer is correct—but it is fundamentally mismatched to many real-world settings.
         </p>
 
         <p>
-          However, these same methods tend to produce <strong>overconfident models</strong> that are more prone to <strong>hallucination</strong>. 
-          Because the reward signal focuses solely on final answer correctness, models are incentivized to guess — even when they are uncertain. 
-          This is especially problematic in high-stakes settings like <strong>healthcare</strong> and <strong>law</strong>, where confident errors can be harmful or even dangerous.
+          In practice, tasks are often <strong>multi-valid</strong> or <strong>epistemically uncertain</strong>:
         </p>
 
-        <p>
-          <strong>RLCR</strong> addresses this gap. We introduce a reinforcement learning framework that trains models to reason about their own uncertainty — rewarding not just accuracy, but also calibrated confidence.
-        </p>
+        <ul>
+          <li>🩺 Medical diagnosis: multiple plausible (and sometimes simultaneously correct) diagnoses</li>
+          <li>❓ Ambiguous QA: incomplete or underspecified information implies multiple reasonable hypotheses</li>
+          <li>📚 Decision support: downstream actions depend on exploring alternatives and knowing what you don’t know</li>
+        </ul>
 
         <p>
-          Instead of encouraging blind certainty, RLCR incentivizes models to <em>reflect</em>, evaluate their own outputs, and communicate uncertainty when appropriate.
-          The result is a model that performs better <strong>(higher accuracy ✅)</strong> and knows when it's likely to be wrong <strong>(better calibration 🎯)</strong>.
-        </p>
-
-        <p>
-          In domains where trust, safety, and interpretability matter, this dual optimization — getting the right answer, and knowing when you might not — makes all the difference.
+          Single-answer RL tends to <strong>collapse probability mass onto the dominant mode</strong>, suppressing alternative correct hypotheses.
+          If we want models to represent <em>distributions</em> of plausible answers—ideally paired with <em>calibrated uncertainty</em>—we should optimize those properties <strong>during training</strong>, not try to recover them at inference time.
         </p>
       </div>
     </div>
   </div>
 </section>
 
-<script src="examples-content.js"></script>
-
-<section class="section" id="examples" style="font-family: 'DM Sans', sans-serif;">
+<!-- ===================== SECTION: WHY SINGLE-ANSWER FAILS ===================== -->
+<section id="why-single-answer" class="section" style="font-family: 'DM Sans', sans-serif;">
   <div class="container">
     <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
       <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-      <h2 class="title is-3 has-text-centered">Examples</h2>
-      <p>Below, you can see examples of RLCR in action. Click on the tabs to see the model's confidence and answer for each example and compare it to RLVR and Base model outputs!</p><br>
-      <div class="container">
-        
-        <!-- Gray Question Box -->
-        <div id="question-box" class="box" style="background-color: #f5f5f5;">
-          <div id="question-text">Loading...</div>
-        </div>
-        
-        <div class="columns">
-          <!-- Main Viewing Area -->
-          <div class="column is-9">
-            <div id="viewer-content" class="box" style="min-height: 500px;">
-              <!-- Dynamic content inserted here -->
-            </div>
-          </div>
+      <h2 class="title is-3 has-text-centered">Why Single-Answer RL Fails</h2>
 
-          <!-- Sidebar Navigation -->
-          <div class="column is-3">
-            <aside class="menu">
-              <p class="menu-label">Examples</p>
-              <ul class="menu-list" id="example-list">
-                <!-- List items populated by JS -->
-              </ul>
-            </aside>
-          </div>
-        </div>
+      <div class="content">
+        <p>
+          Standard RLVR uses a <strong>single-answer correctness reward</strong>: the model is rewarded for matching one ground-truth output.
+          This incentivizes the policy to concentrate mass on a single high-reward response.
+        </p>
+
+        <p>
+          As a result, the common “fix” is <strong>inference-time scaling</strong>—sampling the model multiple times and hoping diversity emerges.
+          But when the underlying distribution collapses, repeated sampling is fundamentally limited:
+        </p>
+
+        <ul>
+          <li>Duplicate answers (low effective set size)</li>
+          <li>Repeated reasoning scaffolds and redundant computation</li>
+          <li>Poor scaling of Pass@K and recall</li>
+        </ul>
+
+        <p>
+          <strong>Key message:</strong> mode collapse is a <em>training objective problem</em>, not an inference trick problem.
+        </p>
       </div>
-      <br> These examples are from the RLCR models trained on Math. 
     </div>
   </div>
 </section>
 
-<script>
-  // Ensure examples array is available from examples-content.js
-  if (typeof examples === 'undefined') {
-    console.error("The 'examples' array is not loaded. Make sure examples-content.js is included.");
-  } else {
-    const questionBox = document.getElementById('question-text');
-    const viewerContent = document.getElementById('viewer-content');
-    const exampleList = document.getElementById('example-list');
-
-    function loadExample(index) {
-      const ex = examples[index];
-
-      const parts = ex.question.split('\n');
-      const questionLine = parts[0].trim();
-      const groundTruthLine = parts.length > 1 ? parts[1].trim() : "";
-
-      // Better rendering: no <strong> wrapping inline LaTeX
-      const questionBox = document.getElementById('question-text');
-      questionBox.innerHTML = `
-        <div><strong>Question:</strong> <span class="math-question">${questionLine}</span></div>
-        <div><strong>Ground Truth Answer:</strong> <span class="math-answer">${groundTruthLine.replace('Ground Truth Answer: ', '')}</span></div>
-      `;
-
-      const viewerContent = document.getElementById('viewer-content');
-      viewerContent.innerHTML = ex.content;
-
-      // Highlight active link
-      document.querySelectorAll('.example-link').forEach(link => link.classList.remove('is-active'));
-      const activeLink = document.querySelector(`[data-index="${index}"]`);
-      if (activeLink) activeLink.classList.add('is-active');
-
-      // Force MathJax to re-typeset all updated math
-      if (window.MathJax) {
-        MathJax.typeset();
-      }
-    }
-
-    // Populate sidebar
-    examples.forEach((ex, i) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<a href="#" class="example-link ${i === 0 ? 'is-active' : ''}" data-index="${i}">${ex.title}</a>`;
-      exampleList.appendChild(li);
-    });
-
-    // Setup listeners
-    document.querySelectorAll('.example-link').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const index = parseInt(e.target.getAttribute('data-index'));
-        loadExample(index);
-      });
-    });
-
-    // Load first example
-    loadExample(0);
-  }
-</script>
-
+<!-- ===================== SECTION: OUR IDEA ===================== -->
 <section id="our-idea" class="section" style="font-family: 'DM Sans', sans-serif;">
   <div class="container">
     <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
       <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-      <h2 class="title is-3" style="text-align: center;" id="our-idea">Method</h2>
+      <h2 class="title is-3 has-text-centered">Our Idea</h2>
 
       <div class="content">
-        <p><strong>RLCR makes a simple shift:</strong> instead of rewarding only correctness, we reward both accuracy and calibrated confidence.</p>
-
-        <ul>
-          <li>💡 <strong>We reward models for being right <em>and</em> for knowing when they're right.</strong></li>
-          <li>💡 <strong>We move uncertainty reasoning into training</strong> — teaching the model to reflect on its own uncertainty while solving the task.</li>
-          <li>💡 <strong>With a simple tweak to the reward function</strong>, RLCR enables LLMs to improve both performance and self-awareness.</li>
-        </ul>
-
         <p>
-          During training, the model reasons jointly about the <strong>task</strong> and its own <strong>uncertainty</strong>, 
-          producing both an <strong>answer</strong> and a <strong>confidence estimate</strong>.
-        </p>
-
-        <p>
-          Our reward combines two terms:
+          <strong>Multi-Answer Reinforcement Learning</strong> trains a model to generate a <strong>set of K distinct candidate answers</strong>
+          in a <strong>single forward pass</strong>.
         </p>
 
         <ul>
-          <li>🎯 <strong>Correctness</strong> — Is the answer right?</li>
-          <li>📏 <strong>Calibration</strong> — Does the confidence reflect actual correctness?</li>
+          <li>💡 Internalizes aspects of inference-time search into the model’s generative process</li>
+          <li>💡 Encourages explicit exploration of alternative hypotheses</li>
+          <li>💡 Supports multi-valid tasks and ambiguous single-label tasks</li>
+          <li>💡 Can be extended to produce <strong>calibrated confidence</strong> per answer</li>
         </ul>
 
         <p>
-          Confidently wrong or uncertainly right responses are penalized. This encourages models to learn not just what to answer, but how sure to be.
+          Instead of repeatedly sampling the same collapsed distribution, the model learns to jointly optimize a structured output containing multiple hypotheses—more diverse, higher recall, and more token-efficient.
         </p>
-
-        <div class="columns is-centered mt-5">
-          <div class="column has-text-centered">
-            <img src="assets/images/reward_fns.jpeg" alt="Reward Functions" style="max-width: 100%;">
-          </div>
-        </div>
-        <p>In RLCR, the reward for giving an incorrect answer is never better than the reward for giving a correct answer, which prevents models from losing accuracy.</p>
-
-        <!-- Math Toggle Box -->
-        <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
-          <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-          <!-- Tabs -->
-          <div class="tabs is-toggle is-toggle-rounded is-centered mb-4">
-            <ul>
-              <li class="is-active" id="tab-intuitive" onclick="showMath('intuitive')"><a>Intuitive Equation</a></li>
-              <li id="tab-symbolic" onclick="showMath('symbolic')"><a>Symbolic Equation</a></li>
-            </ul>
-          </div>
-
-          <!-- Math Content -->
-          <div id="intuitive-math" class="math-view fade-math">
-            <p><strong>Traditional RLVR reward:</strong></p>
-            <div class="math-scroll">
-              <p>$$
-              R_{\text{RLVR}} = \text{Correctness} = \mathbb{1}(\text{prediction} = \text{label})
-              $$</p>
-            </div>
-
-            <p class="mt-4"><strong>RLCR reward:</strong></p>
-            <div class="math-scroll">
-              <p>$$
-              R_{\text{RLCR}} = \text{Correctness} - \left( \text{Confidence} - \text{Correctness} \right)^2
-              $$</p>
-            </div>
-
-            <p>
-              where <strong>Correctness</strong> is 1 if the prediction is correct, 0 otherwise; and <strong>Confidence</strong> is the model’s self-estimated probability that its prediction is correct.
-            </p>
-          </div>
-
-          <div id="symbolic-math" class="math-view fade-math is-hidden">
-            <p><strong>Traditional RLVR reward:</strong></p>
-            <div class="math-scroll">
-              <p>$$
-              R_{\text{RLVR}} = \mathbb{1}(\hat{y} = y)
-              $$</p>
-            </div>
-
-            <p class="mt-4"><strong>RLCR reward:</strong></p>
-            <div class="math-scroll">
-              <p>$$
-              R_{\text{RLCR}} = \mathbb{1}(\hat{y} = y) - \left( \hat{q} - \mathbb{1}(\hat{y} = y) \right)^2
-              $$</p>
-            </div>
-
-            <p>
-              where \( \hat{y} \) is the model’s prediction, \( y \) is the ground truth, and \( \hat{q} \) is the model’s confidence estimate.
-            </p>
-          </div>
-        </div>
       </div>
-
-      <br>
-      <p><strong>What We Prove:</strong></p>
-      <p>✅ RLCR provably optimizes for both accuracy & calibration.</p>
-      <p>✅ Calibration comes at no cost to accuracy.</p>
-      <p>✅ Works with any bounded proper scoring rule — we use the Brier score.</p>
     </div>
+  </div>
 </section>
 
-<!-- MathJax -->
-<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<!-- ===================== SECTION: MULTI-RLVR ===================== -->
+<section id="multi-rlvr" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">Multi-Answer RLVR (Multi-RLVR)</h2>
 
-<!-- Style for fade, scroll, and tabs -->
-<style>
-  .fade-math {
-    transition: opacity 0.4s ease;
-  }
-  .is-hidden {
-    opacity: 0;
-    height: 0;
-    overflow: hidden;
-    pointer-events: none;
-    position: absolute;
-  }
-  .math-view {
-    opacity: 1;
-    position: relative;
-  }
-  .math-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
-  }
-  .math-scroll p {
-    white-space: nowrap;
-  }
-</style>
+      <div class="content">
+        <p>
+          We generalize RLVR from a single ground-truth answer to a <strong>ground-truth answer set</strong>
+          \(Y^*(x)=\{y^*_1,\dots,y^*_N\}\), where \(N\) may vary per example.
+        </p>
 
-<!-- JavaScript Logic -->
-<script>
-  function showMath(mode) {
-    const intuitiveTab = document.getElementById('tab-intuitive');
-    const symbolicTab = document.getElementById('tab-symbolic');
-    const intuitiveMath = document.getElementById('intuitive-math');
-    const symbolicMath = document.getElementById('symbolic-math');
+        <p>
+          The policy is prompted to produce a structured set of <strong>K distinct</strong> candidate answers
+          \(A=\{a_1,\dots,a_K\}\) in a single generation.
+        </p>
 
-    if (mode === 'intuitive') {
-      intuitiveTab.classList.add('is-active');
-      symbolicTab.classList.remove('is-active');
-      intuitiveMath.classList.remove('is-hidden');
-      symbolicMath.classList.add('is-hidden');
-    } else {
-      symbolicTab.classList.add('is-active');
-      intuitiveTab.classList.remove('is-active');
-      symbolicMath.classList.remove('is-hidden');
-      intuitiveMath.classList.add('is-hidden');
-    }
+        <p>
+          We then use a <strong>set-level verifiable reward</strong> that measures coverage:
+        </p>
 
-    if (window.MathJax) MathJax.typeset();
-  }
-</script>
+        <div class="math-scroll">
+          <p>$$
+            R^{multi}_{RLVR}(A, Y^*) = \sum_{i=1}^{K} \mathbb{1}[a_i \in Y^*]
+          $$</p>
+        </div>
 
+        <p style="margin-top: 1rem;">
+          This subsumes standard RLVR (K=1) and Pass@K (N=1, K&gt;1), and directly optimizes “how many correct hypotheses did we recover?” rather than “did we guess the single best one?”.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: MULTI-RLCR ===================== -->
+<section id="multi-rlcr" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">Multi-Answer RLCR (Multi-RLCR)</h2>
+
+      <div class="content">
+        <p>
+          Multi-RLCR extends Multi-RLVR by training the model to output <strong>confidence scores per answer</strong>.
+          In one chain-of-thought, the model generates:
+        </p>
+
+        <ul>
+          <li>Answer set \(A=\{a_1,\dots,a_K\}\)</li>
+          <li>Confidence set \(Q=\{q_1,\dots,q_K\}\), where each \(q_i \in [0,1]\) estimates correctness of \(a_i\)</li>
+        </ul>
+
+        <p>
+          We use a set-level calibration objective based on a <strong>Multi-Brier score</strong>:
+        </p>
+
+        <div class="math-scroll">
+          <p>$$
+            R^{multi}_{Brier}(A,Q,Y^*) = \frac{1}{K}\sum_{i=1}^{K} (q_i - \mathbb{1}[a_i \in Y^*])^2
+          $$</p>
+        </div>
+
+        <p>
+          Final reward:
+        </p>
+
+        <div class="math-scroll">
+          <p>$$
+            R^{multi}_{RLCR}(A,Q,Y^*) = R^{multi}_{RLVR}(A,Y^*) - R^{multi}_{Brier}(A,Q,Y^*)
+          $$</p>
+        </div>
+
+        <p style="margin-top: 1rem;">
+          This trains models to produce <strong>uncertainty-aware answer sets</strong>—a distribution over plausible hypotheses with calibrated confidence.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: RESULTS ===================== -->
 <section id="results" class="section" style="font-family: 'DM Sans', sans-serif;">
   <div class="container">
     <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
       <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-      <h2 class="title is-3 has-text-centered">Results 📊</h2>
+      <h2 class="title is-3 has-text-centered">Results</h2>
 
-      <p>
-        On diverse QA & math benchmarks (both in-domain and out-of-distribution):
-      </p>
+      <div class="content">
+        <p>
+          Across medical diagnosis (DDXPlus) and ambiguous QA (HotPotQA-Modified), Multi-Answer RL improves:
+        </p>
 
-      <ul>
-        <li>✨ <strong>Accuracy</strong> stays on par (or better) than RL baselines, with <strong>calibration error reduced by up to 90%</strong>.</li>
-        <li>✨ Outperforms <strong>post-hoc classifiers & probes</strong> on calibration.</li>
-        <li>✨ <strong>RLVR degrades calibration</strong> in OOD tasks, while <strong>RLCR significantly improves it</strong>.</li>
-      </ul>
+        <ul>
+          <li>✅ <strong>Recall / Pass@K</strong> (more correct answers recovered per example)</li>
+          <li>✅ <strong>Diversity</strong> (distinct hypotheses instead of repeated samples)</li>
+          <li>✅ <strong>Token efficiency</strong> (fewer tokens to produce K answers)</li>
+        </ul>
 
-      <div class="image-container" style="text-align: center; margin: 20px 0;">
-        <img src="assets/images/results.jpeg" alt="Results Chart" style="max-width: 100%; height: auto;">
+        <p>
+          Critically, <strong>prompting a single-answer-trained model</strong> to output multiple answers does <em>not</em> match multi-answer training.
+          The objective matters.
+        </p>
+
+        <!-- Include Table 1 from the paper (page 6). Save as assets/images/table1.jpg -->
+        <!-- Use Figure 2 from the paper (page 8): recall over k -->
+        <div style="text-align: center;">
+          <img src="assets/images/scaling_curve.png" alt="Figure 2: Average recall over k" style="max-width: 80%;">
+          <p class="is-size-7" style="margin-top: 0.4rem; color: #666;">
+            <strong>Figure 2 (paper page 8).</strong> Multi-Answer RL improves recall scaling with k and recovers answers RLVR-Single never reaches.
+          </p>
+        </div>
+        
       </div>
     </div>
   </div>
 </section>
 
-<section id="test-time-scaling" class="section" style="font-family: 'DM Sans', sans-serif;">
-  <div class="container">
-    <div class="box has-text-centered" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
-      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-      <h2 class="title is-3">Can confidence scores help at test time? 🚀</h2>
-
-      <p>
-        Yes — confidence estimates can be directly integrated into <strong>test-time scaling strategies</strong> to improve performance when additional compute is available.
-      </p>
-
-      <p>We explore two simple yet effective techniques:</p>
-      <ul>
-        <li><strong>Max-Confidence Selection</strong>: Choose the response with the highest self-reported confidence.</li>
-        <li><strong>Confidence-Weighted Majority Voting</strong>: Aggregate multiple responses, weighting each vote by its confidence score.</li>
-      </ul>
-
-      <p>
-        These strategies yield <strong>better accuracy and calibration</strong> as compute scales. 📈
-      </p>
-
-      <div class="image-container" style="text-align: center; margin: 20px 0;">
-        <img src="assets/images/inf_scaling.png" alt="Inference Scaling Strategies" style="max-width: 100%; height: auto;">
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="uncertainty-cot" class="section" style="font-family: 'DM Sans', sans-serif;">
+<!-- ===================== SECTION: DIVERSITY ===================== -->
+<section id="diversity" class="section" style="font-family: 'DM Sans', sans-serif;">
   <div class="container">
     <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
       <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-      <h2 class="title is-3 has-text-centered">Does Explicitly Reasoning About Uncertainty Help? 🧠</h2>
+      <h2 class="title is-3 has-text-centered">Diversity</h2>
 
-      <p>
-        To investigate the impact of uncertainty reasoning within the chain-of-thought (CoT), we trained two types of classifiers:
-      </p>
-      <br>
-      <li><strong>Baseline:</strong> Trained on model solutions and final answers.</li>
-      <li><strong>Analysis:</strong> Trained on the same, but with explicit uncertainty reasoning included in the CoT.</li>
-      
-      <br>
-      <p>
-        <strong>Result:</strong> The analysis classifier <strong>outperformed</strong> the baseline, particularly for <strong>smaller model sizes</strong>.  
-        Larger models can infer confidence from solutions alone, but smaller ones benefit from having uncertainty reasoning made explicit.
-      </p>
+      <div class="content">
+        <p>
+          Multi-Answer training <strong>escapes the dominant mode</strong>.
+          Under a matched sampling budget, Multi-RLVR produces substantially more unique answers than RLVR-Single—recovering correct hypotheses that single-answer RL never reaches.
+        </p>
 
-      <br>
-      <p>
-        🔍 <strong>Classifier capacity shapes the optimal CoT content</strong> — a key insight for future work in prompting and model alignment.
-      </p>
+        
 
-      <div class="image-container" style="text-align: center; margin: 20px 0;">
-        <img src="assets/images/classifier.png" alt="Classifier Results" style="max-width: 100%; height: auto;">
+        <div class="columns is-centered mt-5">
+          <div class="column has-text-centered">
+            <!-- Use Figure 4 from the paper (page 10): diversity histogram -->
+            <img src="assets/images/diversity_histogram.png" alt="Figure 4: Diversity of diagnoses per question" style="max-width: 100%;">
+            <p class="is-size-7" style="margin-top: 0.4rem; color: #666;">
+              <strong>Figure 4 (paper page 10).</strong> RLVR-Multi produces more distinct diagnoses than RLVR-Single (higher effective set size).
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section" id="BibTeX" style="font-family: 'DM Sans', sans-serif; border: 1px solid #ccc; border-radius: 8px; padding: 1.5rem; position: relative;">
-  <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-  <div class="container is-max-desktop content">
-    <h2 class="title" style="text-align: center;">BibTeX</h2>
-    <pre style="background-color: #bbb9b98b; padding: 15px; border-radius: 5px; border: 1px solid #ccc;"><code>@misc{damani2025binaryrewardstraininglms,
-  title={Escaping the Mode: Multi-Answer Reinforcement Learning in Language Models},
-  author={Mehul Damani and Isha Puri and Stewart Slocum and Idan Shenfeld and Leshem Choshen and Yoon Kim and Jacob Andreas},
-  year={2025},
-  eprint={2507.16806},
-  archivePrefix={arXiv},
-  primaryClass={cs.LG},
-  url={https://arxiv.org/abs/2507.16806},
-}</code></pre>
-  </div>
-</section>
+<!-- ===================== SECTION: EFFICIENCY ===================== -->
+<section id="efficiency" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">Efficiency</h2>
 
-<br><br>
+      <div class="content">
+        <p>
+          Inference-time sampling is expensive because it repeatedly regenerates similar reasoning.
+          Even when the final answers differ, independently sampled outputs often share substantial token-level overlap.
+        </p>
 
-<section class="section" id="Code" style="font-family: 'DM Sans', sans-serif; border: 1px solid #ccc; border-radius: 8px; padding: 1.5rem; position: relative;">
-  <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-  <div class="container is-max-desktop content">
-    <h2 class="title" style="text-align: center;">Code</h2>
-    <div class="columns">
-      <div class="column">
-        <img src="https://github-readme-stats.vercel.app/api/pin/?username=damanimehul&repo=RLCR" alt="RLCR repo card" />
-      </div>
-      <div class="column">
-        <p><br>For all code, models, and data, check out the <a href="https://github.com/damanimehul/RLCR">RLCR GitHub Repo</a>. We provide a detailed README with instructions for setting up, training, and evaluating the model.</p>
+        <p>
+          Multi-Answer RL mitigates this by optimizing multiple hypotheses jointly in a single generation—reducing redundant computation and lowering total token cost for K answers.
+        </p>
+
+        <div class="columns is-centered mt-5">
+          <div class="column has-text-centered">
+            <!-- Use Figure 5 from the paper (page 10): overlap example -->
+            <img src="assets/images/token_overlap.png" alt="Figure 5: Token overlap across samples" style="max-width: 100%;">
+            <p class="is-size-7" style="margin-top: 0.4rem; color: #666;">
+              <strong>Figure 5 (paper page 10).</strong> Independent sampling re-instantiates similar reasoning tokens; Multi-Answer RL reduces redundancy.
+            </p>
+          </div>
+        </div>
+
+        <p style="margin-top: 1rem;">
+          <strong>Takeaway:</strong> Multi-answer training is a principled, compute-efficient alternative to inference-time scaling.
+        </p>
       </div>
     </div>
   </div>
 </section>
 
+<!-- ===================== SECTION: SCALING WITH K ===================== -->
+<section id="scaling-k" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">Scaling with K</h2>
 
-<br><br>
+      <div class="content">
+        <p>
+          We train Multi-RLVR with \(K \in \{2,3,4,5\}\).
+          Because medical examples often have multiple correct diagnoses, increasing K expands the model’s capacity to recover valid alternatives.
+        </p>
 
+        <p>
+          Training remains stable as K increases: the average number of correct answers per set increases monotonically, and uniqueness constraints ensure gains come from surfacing new hypotheses rather than repeating the dominant one.
+        </p>
 
-
-<section id="Slides" class="section" style="font-family: 'DM Sans', sans-serif;">
-  <div class="box" style="border:1px solid #ccc; padding:1.5rem; position:relative; height:90vh; overflow:hidden;">
-    <a href="#top" style="position:absolute; top:10px; right:10px; font-size:0.8rem;">Back to Top</a>
-    <h2 class="title is-3 has-text-centered">Slides</h2>
-  
-    <div style="position:absolute; inset:4rem 1.5rem 1.5rem 1.5rem;"> <!-- leaves room for title/padding -->
-      <iframe
-        src="assets/pdfs/rlcr_talk_draft1.pdf#toolbar=0&navpanes=0&scrollbar=0"
-        style="width:100%; height:100%; border:0; display:block;"
-        frameborder="0"
-        oncontextmenu="return false">
-      </iframe>
+        <div class="columns is-centered mt-5">
+          <div class="column has-text-centered">
+            <!-- Use Figure 6 from the paper (page 11) -->
+            <img src="assets/images/varying_k_training_curves.png" alt="Figure 6: Stability with increasing K" style="max-width: 100%;">
+            <p class="is-size-7" style="margin-top: 0.4rem; color: #666;">
+              <strong>Figure 6 (paper page 11).</strong> As K increases, Multi-Answer RLVR stably recovers more unique correct diagnoses per set.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  
 </section>
 
+<!-- ===================== SECTION: CALIBRATION ===================== -->
+<section id="calibration" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">Calibration</h2>
+
+      <div class="content">
+        <p>
+          Multi-RLCR adds a set-level calibration objective so the model can output not just multiple answers, but <strong>meaningful confidence estimates</strong> for each hypothesis.
+        </p>
+
+        <p>
+          On DDXPlus, RLCR-Multi improves set- and answer-level calibration over RLVR-Multi, and calibration curves closely track the identity line.
+        </p>
+
+        <div class="columns is-centered mt-5">
+          <div class="column has-text-centered">
+            <!-- Use Figure 3 from the paper (page 9): calibration curves -->
+            <img src="assets/images/calibration_curve.png" alt="Figure 3: Calibration curves" style="max-width: 70%;">
+            <p class="is-size-7" style="margin-top: 0.4rem; color: #666;">
+              <strong>Figure 3 (paper page 9).</strong> RLCR-Multi tracks perfect calibration; RLVR-Multi is systematically overconfident.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION: TAKEAWAY ===================== -->
+<section id="takeaway" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">Takeaway</h2>
+
+      <div class="content">
+        <p>
+          If you want models to output <strong>multiple plausible hypotheses</strong> and <strong>calibrated uncertainty</strong>,
+          those properties should be optimized during training.
+        </p>
+
+        <ul>
+          <li>✅ Escapes mode collapse by explicitly training on answer sets</li>
+          <li>✅ Improves recall/Pass@K and answer diversity</li>
+          <li>✅ Enables calibrated confidence over hypotheses (Multi-RLCR)</li>
+          <li>✅ Reduces redundant inference-time computation (token-efficient)</li>
+        </ul>
+
+        <p>
+          <strong>Multi-Answer RL</strong> is a principled, compute-efficient alternative to inference-time scaling for tasks where uncertainty and multi-validity matter.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BIBTEX ===================== -->
+<section id="BibTeX" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">BibTeX</h2>
+
+      <div class="content">
+        <div class="scroll-box">
+@article{puri202Xescaping,
+  title={Escaping the Mode: Multi-Answer Reinforcement Learning in LMs},
+  author={Puri, Isha and Damani, Mehul and Shenfeld, Idan and Ghassemi, Marzyeh and Andreas, Jacob and Kim, Yoon},
+  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  year={202X}
+}
+        </div>
+        <p class="is-size-7" style="color:#666;">ISHA REPLACE THIS.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CODE ===================== -->
+<section id="Code" class="section" style="font-family: 'DM Sans', sans-serif;">
+  <div class="container">
+    <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
+      <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
+      <h2 class="title is-3 has-text-centered">Code</h2>
+
+      <div class="content">
+        <p>
+          Code and trained checkpoints:
+        </p>
+        <ul>
+          <li><a href="CODE_URL" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+          <li><a href="MODELS_URL" target="_blank" rel="noopener noreferrer">Models / Data (Hugging Face)</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
 
 
