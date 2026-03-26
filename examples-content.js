@@ -1,306 +1,215 @@
+// examples-content.js
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HELPERS — matching exact RLCR screenshot style
+   ════════════════════════════════════════════════════════════════════════════
+
+   From the screenshot:
+   - Outer shaded box: background tint (pink for RLCR, blue for RLVR),
+     model name as bold text top-left, border-left accent, padding, rounded
+   - Each tag is its own scroll-box: "<tagname>" bold inline at start of
+     content, then a space, then the content text, then " </tagname>" bold
+   ════════════════════════════════════════════════════════════════════════════ */
+
+// One scroll-box per tag, with bold open/close tags inline with content
+function tagBox(tagName, content) {
+  return `<div class="scroll-box"><span class="tag-label">&lt;${tagName}&gt;</span> ${content} <span class="tag-label">&lt;/${tagName}&gt;</span></div>`;
+}
+
+// Outer shaded model box — tinted background, bold label, left border accent
+function modelBox(label, bgColor, borderColor, tags) {
+  return `
+    <div style="background:${bgColor}; border-left:4px solid ${borderColor}; border-radius:6px; padding:14px 16px; margin-bottom:1rem;">
+      <div style="font-weight:bold; font-size:0.9em; margin-bottom:8px;">${label}</div>
+      ${tags}
+    </div>`;
+}
+
+// RLVR Single: 3 side-by-side shaded boxes, each with Sample N label
+function rlvrSingleRow(samples) {
+  const cols = samples.map((s, i) => `
+    <div style="flex:1; min-width:0;">
+      <div style="background:#fff8e6; border-left:4px solid #FFA900; border-radius:6px; padding:14px 16px;">
+        <div style="font-weight:bold; font-size:0.9em; margin-bottom:8px;">RLVR Single Sample ${i+1}</div>
+        ${tagBox('think', s.think)}
+        ${tagBox('answer', s.answer)}
+      </div>
+    </div>`).join('');
+
+  return `
+    <div style="margin-bottom:0.5rem;">
+      <div style="display:flex; gap:10px;">
+        ${cols}
+      </div>
+    </div>`;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   EXAMPLES ARRAY
+   ════════════════════════════════════════════════════════════════════════════ */
 const examples = [
-    {
-        title: "Example - Trivia",
-        question: "What day, month, and year did Ivan Karlović die? \n Ground Truth Answer: August 9, 1531",
-        content: `
-          <div class="box" style="background-color: #fceef5;">
-            <p><strong>RLCR (ours)</strong></p>
-            <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> To determine the day, month, and year Ivan Karlović died, I need to refer to reliable sources such as biographical databases, historical records, or reputable websites that provide information on notable individuals. Ivan Karlović is a Croatian professional tennis player who was born on April 24, 1976. He is known for his achievements in tennis, including being the oldest player to reach the semifinals of a Grand Slam tournament at the 2014 Australian Open at the age of 38 years and 1 month.
-    
-    To find the date of his death, I would search for news articles, obituaries, or official statements from the tennis community or Croatian sports organizations. A quick search reveals that Ivan Karlović passed away on January 15, 2023. This information is consistent across multiple sources, including sports news websites and social media posts from the Croatian Tennis Federation.
-    
-    Therefore, the day, month, and year Ivan Karlović died is January 15, 2023. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> January 15, 2023 <span class="tag-label">&lt;/answer&gt;</span></div>
-            <p><div class="scroll-box"><span class="tag-label">&lt;analysis&gt;</span><br> Upon reviewing the solution, I notice that the reasoning process starts with the birthdate of Ivan Karlović, which is correct (April 24, 1976), but this information is irrelevant to the question about the date of death. The reasoning jumps to the death date without providing any intermediate steps or justification for the transition. The final answer is January 15, 2023, which is stated as the date of death but not derived from the reasoning provided. The reasoning does not explain how the birthdate is connected to the death date, and the answer is presented without any supporting evidence or citation. The analysis is missing, and the confidence in the solution is not justified by the steps taken. The final answer is correct based on external knowledge, but the reasoning does not logically lead to the answer, making the explanation unclear and the steps unnecessary. <br><span class="tag-label">&lt;/analysis&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.3 <span class="tag-label">&lt;/confidence&gt;</span></div>
-          </div>
-          <div class="box" style="background-color: #e6f0ff;">
-            <p><strong>RLVR</strong></p>
-            <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> Ivan Karlović, a Croatian professional tennis player, died on January 25, 2017. This information is based on widely reported news and obituaries that announced his passing.
-    
-    To break it down:
-    - **Day**: 25
-    - **Month**: January
-    - **Year**: 2017
-    
-    This date is significant because it marks the end of a career that saw Karlović achieve numerous milestones, including becoming the oldest man to reach a Grand Slam singles final at the 2015 Wimbledon Championships at the age of 37 years and 28 days. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 25 January 2017 <span class="tag-label">&lt;/answer&gt;</span></div>
-            <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 1.0 <span class="tag-label">&lt;/confidence&gt;</span></div>
-          </div>
-          <div class="box" style="background-color: #fff8dc;">
-            <p><strong>Qwen7B Base</strong></p>
-            <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> To find the day, month, and year Ivan Karlović died, I will search for information about his death date. Ivan Karlović was a Croatian professional tennis player. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> Ivan Karlović died on 11 January 2021. <span class="tag-label">&lt;/answer&gt;</span></div>
-            <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.95 <span class="tag-label">&lt;/confidence&gt;</span></div>
-          </div>
-        `
-      },
 
+  // ── EXAMPLE 1: Medical ────────────────────────────────────────────────────
+  {
+    title: "Example - Medical",
+    question: `Given preliminary symptoms, list plausible diagnoses. Patient: 61-year-old male. Symptoms: coughing up blood, knife-like chest pain (lower + posterior chest wall), shortness of breath, fever, chills, pink peeling rash, diffuse muscle pain, fatigue. History: alcohol addiction, heart failure, COPD, underweight.
+Ground Truth Answer: Pneumonia, Pulmonary neoplasm, Bronchitis, Tuberculosis, Unstable angina, Pericarditis, GERD, Stable angina, Possible NSTEMI/STEMI`,
+    content: `
+      <div>
 
+        ${rlvrSingleRow([
+          {
+            think: `This patient has hemoptysis, chest pain, fever, chills, shortness of breath, and a history of COPD, heart failure, alcohol use, and being underweight. These symptoms point toward a pulmonary or systemic infectious process. Tuberculosis is strongly associated with hemoptysis, fever, and underweight status.`,
+            answer: `Tuberculosis`
+          },
+          {
+            think: `The combination of hemoptysis, fever, night sweats, weight loss, and alcohol use strongly suggests tuberculosis. COPD is a risk factor for respiratory infections in general, but the constellation here most strongly fits TB.`,
+            answer: `Tuberculosis`
+          },
+          {
+            think: `Hemoptysis and fever with underweight status in a patient with known COPD and alcohol use. These are classic TB risk factors. The rash on the commissure might be a secondary manifestation of systemic illness. Most likely tuberculosis.`,
+            answer: `Tuberculosis`
+          }
+        ])}
 
+        <p style="font-size:0.85em;color:#888;margin:4px 0 1rem;">Collapses to one mode across all 3 samples. Covers 1 of 9 gold diagnoses.</p>
 
+        <!-- RLVR Multi (hidden by default) -->
+        <div id="rlvr-block-med" style="display:none;">
+          ${modelBox('RLVR Multi (1 generation, 3 answers)', '#f9f0ff', '#A900FF',
+              tagBox('think', `Let me consider several possibilities. The hemoptysis and fever could fit pulmonary embolism, pneumonia, or tuberculosis. The patient has heart failure and COPD, increasing PE risk. However, the fever, chills, and systemic symptoms also fit an infectious cause. The rash on the commissure is unusual and could suggest a secondary infection. I'll consider PE, pneumonia, and TB as my top three, reasoning about each separately.\n\nCandidate 1 (Pulmonary Embolism): Sudden chest pain, shortness of breath, COPD and heart failure history — classic PE risk factors. Hemoptysis is less common but possible.\n\nCandidate 2 (Pneumonia): Fever, chills, cough, hemoptysis. COPD and underweight status increase susceptibility. Matches well with the systemic symptoms.\n\nCandidate 3 (Tuberculosis): Hemoptysis, fever, underweight, alcohol use — all are TB risk factors. Less likely to present this acutely but cannot be ruled out.`) +
+              tagBox('answer1', `Pulmonary Embolism`) +
+              tagBox('answer2', `Pneumonia`) +
+              tagBox('answer3', `Tuberculosis`)
+          )}
+          <p style="font-size:0.85em;color:#888;margin:-0.5rem 0 1rem;">Covers 2 of 9 gold diagnoses in a single pass. Diverse candidates, but no confidence estimates.</p>
+        </div>
 
+        <!-- RLCR Multi (shown by default) -->
+        <div id="rlcr-block-med" style="display:block;">
+          ${modelBox('RLCR Multi (1 generation, with confidence)', '#f9f0ff', '#A900FF',
+              tagBox('think', `Let me reason through the three most plausible diagnoses for this patient, considering my uncertainty about each.\n\nTuberculosis: Hemoptysis, underweight, alcohol use, fever — very strong indicators. TB is a serious consideration but can be tricky to confirm without culture results. I have fairly high confidence here.\n\nPneumonia: Fever, chills, cough, shortness of breath, COPD history — pneumonia fits well and is common. I have moderate-to-high confidence.\n\nBronchitis: Cough, fever, COPD exacerbation — plausible, though hemoptysis is less typical for simple bronchitis. Lower confidence than the first two.\n\nI'll assign confidences accordingly: TB first (0.40), pneumonia second (0.30), bronchitis third (0.30).`) +
+              tagBox('answer1', `Tuberculosis`) +
+              tagBox('confidence1', `0.40`) +
+              tagBox('answer2', `Pneumonia`) +
+              tagBox('confidence2', `0.30`) +
+              tagBox('answer3', `Bronchitis`) +
+              tagBox('confidence3', `0.30`)
+          )}
+          <p style="font-size:0.85em;color:#888;margin:-0.5rem 0 1rem;">Covers 3 of 9 gold diagnoses in a single pass, with a calibrated confidence distribution per answer.</p>
+        </div>
 
+      </div>
+    `
+  },
 
+  // ── EXAMPLE 2: Trivia ─────────────────────────────────────────────────────
+  {
+    title: "Example - Trivia",
+    question: `What day, month, and year did Ivan Karlović die?
+Ground Truth Answer: August 9, 1531`,
+    content: `
+      <div>
 
-      {
-        title: "Example - Trivia",
-        question: "What is worn around the neck in a ‘gurning’ contest? \n Ground Truth Answer: Horse Collar",
-        content: `
-          <div class="box" style="background-color: #fceef5;">
-            <p><strong>RLCR (ours)</strong></p>
-            <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> In a 'gurning' contest, participants compete to make the most exaggerated and grotesque facial expressions, with the neck being a key area for movement and expression. The term "gurning" itself is derived from the word "gurn," which means to make a grotesque or contorted face. In such contests, the neck is often the focal point because it allows for a wide range of movements that can enhance the visual impact of the facial expression. The neck can be twisted, bent, and contorted in various ways to create the most extreme and humorous expressions. The contestant who can achieve the most exaggerated and entertaining neck movement or contortion is typically the winner. This type of contest is often seen in pub quizzes, village fetes, or other informal gatherings where humor and entertainment are the main goals. The neck is the primary area of focus because it is the most visible and flexible part of the face, allowing for a wide range of movements that can be easily exaggerated and observed by the audience. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> scarf <span class="tag-label">&lt;/answer&gt;</span></div>
-            <p><div class="scroll-box"><span class="tag-label">&lt;analysis&gt;</span><br> Upon reviewing the solution, I notice that the reasoning provided in the section is logical and coherent, explaining why the neck is the focal point in a gurning contest. The answer "scarf" is not supported by the reasoning, as the reasoning does not mention a scarf at all. The reasoning focuses on the neck as the area of movement and expression, but the answer does not align with the context of the question, which asks what is worn around the neck. The answer "scarf" is not mentioned or justified in the reasoning process, and the reasoning does not lead to this conclusion. The answer seems arbitrary and does not flow from the reasoning provided, making the solution unclear and incorrect. The confidence level should be low due to the lack of connection between the reasoning and the answer, and the introduction of an unrelated item (scarf) that is not supported by the context. <br><span class="tag-label">&lt;/analysis&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.2 <span class="tag-label">&lt;/confidence&gt;</span></div>
-          </div>
-          <div class="box" style="background-color: #e6f0ff;">
-            <p><strong>RLVR</strong></p>
-            <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> In a "gurning" contest, participants typically wear a necktie or a scarf around their neck. The purpose of this attire is to provide a clear and visible target for the judges to evaluate the contortion of the neck and face during the competition.<br>
-            Gurning is a form of competitive facial expression where participants attempt to make the most exaggerated and grotesque faces possible. The necktie or scarf helps in highlighting the movements and contortions of the neck, making it easier for the judges to assess the contestants' performance.<br>
-            Therefore, the item worn around the neck in a gurning contest is a necktie or a scarf. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> necktie or a scarf <span class="tag-label">&lt;/answer&gt;</span></div>
-            <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 1.0 <span class="tag-label">&lt;/confidence&gt;</span></div>
-          </div>
-          <div class="box" style="background-color: #fff8dc;">
-            <p><strong>Qwen7B Base</strong></p>
-            <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> I need to recall information about gurning contests and the attire associated with them. Gurning is a traditional English folk game where participants try to make the most grotesque facial expressions. The attire worn during these contests is typically a necktie or a scarf. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-            <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> A necktie or a scarf  <span class="tag-label">&lt;/answer&gt;</span></div>
-            <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.95 <span class="tag-label">&lt;/confidence&gt;</span></div>
-          </div>
-        `
-      },
-      
-      
-      
-    {
-      title: "Example - Trivia",
-      question: "At which Olympic Games did the People's Republic of China participate for the first time? \n Ground Truth Answer: 1984, Los Angeles",
-      content: `
-        <div class="box" style="background-color: #fceef5;">
-          <p><strong>RLCR (ours)</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> To solve this problem, I need to recall the history of the People's Republic of China's participation in the Olympic Games. The People's Republic of China (PRC) was established in 1949, but its participation in the Olympic Games did not begin until several years later. The PRC first participated in the Olympic Games in 1952, but it did not send a delegation to the 1952 Summer Olympics in Helsinki, Finland. Instead, the PRC sent a team to the 1952 Winter Olympics in Oslo, Norway, where they competed in figure skating and speed skating. However, the PRC's official participation in the Olympic Games began in 1956. The PRC sent a delegation to the 1956 Summer Olympics in Melbourne, Australia, where they competed in various sports. Therefore, the People's Republic of China participated in the Olympic Games for the first time in 1956. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 1956 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <p><div class="scroll-box"><span class="tag-label">&lt;analysis&gt;</span><br> The reasoning correctly identifies historical events but fails to connect them logically to the conclusion. The mention of 1952 and then a shift to 1956 is abrupt and lacks justification. The conclusion that 1956 was the first participation is incorrect based on the earlier content. <br><span class="tag-label">&lt;/analysis&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.3 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-        <div class="box" style="background-color: #e6f0ff;">
-          <p><strong>RLVR</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> The People's Republic of China first participated in the Olympic Games in 1952. This was at the 15th Summer Olympic Games, held in Helsinki, Finland. The decision to participate in the Olympics was a significant step for China, as it marked the beginning of its involvement in international sporting events. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 1952 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 1.0 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-        <div class="box" style="background-color: #fff8dc;">
-          <p><strong>Qwen7B Base</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> To find the answer to this question, I will need to search for information about the Olympic Games and the participation of the People's Republic of China. I will look for the first time the country participated in the Olympics. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> The People's Republic of China participated in the Olympic Games for the first time at the 1952 Summer Olympics in Helsinki, Finland. <span class="tag-label">&lt;/answer&gt;</span></div>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.95 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-      `
-    },
-    {
-      title: "Example - Math",
-      question: "Let p(x) be a quadratic polynomial with integer coefficients which has 4−√11 as a root. Compute p(3)/p(4). \n Ground Truth Answer: 10/11",
-      content: `
-        <div class="box" style="background-color: #fceef5;">
-          <p><strong>RLCR (ours)</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> Given that p(x) is a quadratic polynomial with integer coefficients and 4 - √11 is a root, the other root must be 4 + √11. This means we can write p(x) = (x - (4 - √11))(x - (4 + √11)) = (x - 4)^2 - 11 = x^2 - 8x + 5. Then, p(3) = -10 and p(4) = -11, so p(3)/p(4) = 10/11. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 0.909 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <p><div class="scroll-box"><span class="tag-label">&lt;analysis&gt;</span><br> The reasoning is mathematically sound, but the final answer is reported in decimal form (0.909) instead of the exact fraction (10/11), which is less appropriate for a mathematical answer. <br><span class="tag-label">&lt;/analysis&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.3 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-        <div class="box" style="background-color: #e6f0ff;">
-          <p><strong>RLVR</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> Using the root 4 - √11 and its conjugate, we get the quadratic polynomial p(x) = x^2 - 8x + 5. Then p(3) = -10 and p(4) = -11, so the ratio p(3)/p(4) = 10/11. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 10/11 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 1.0 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-        <div class="box" style="background-color: #fff8dc;">
-          <p><strong>Qwen7B Base</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> Same polynomial setup yields p(x) = x^2 - 8x + 5, with p(3) = -10 and p(4) = -11, thus the result is 10/11. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 10/11 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.95 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-      `
-    },
-    // {
-    //   title: "Example - Trivia",
-    //   question: "Who wrote the novel 'The Brothers Karamazov'? \n Ground Truth Answer: Annick Bricaud",
-    //   content: `
-    //     <div class="box" style="background-color: #fceef5;">
-    //       <p><strong>RLCR (ours)</strong></p>
-    //       <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> The Brothers Karamazov is a classic novel of Russian literature. It is often associated with themes of morality, free will, and the existence of God. The novel is known for being written by a prominent Russian author of the 19th century. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-    //       <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> Fyodor Dostoevsky <span class="tag-label">&lt;/answer&gt;</span></div>
-    //       <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.95 <span class="tag-label">&lt;/confidence&gt;</span></div>
-    //     </div>
-    //     <div class="box" style="background-color: #e6f0ff;">
-    //       <p><strong>RLVR</strong></p>
-    //       <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> The Brothers Karamazov was written by Fyodor Dostoevsky, one of the greatest writers in Russian literature. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-    //       <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> Fyodor Dostoevsky <span class="tag-label">&lt;/answer&gt;</span></div>
-    //       <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 1.0 <span class="tag-label">&lt;/confidence&gt;</span></div>
-    //     </div>
-    //     <div class="box" style="background-color: #fff8dc;">
-    //       <p><strong>Qwen7B Base</strong></p>
-    //       <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br> The author of The Brothers Karamazov is Fyodor Dostoevsky. <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-    //       <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> Fyodor Dostoevsky <span class="tag-label">&lt;/answer&gt;</span></div>
-    //       <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.92 <span class="tag-label">&lt;/confidence&gt;</span></div>
-    //     </div>
-    //   `
-    // },
+        ${rlvrSingleRow([
+          {
+            think: `Ivan Karlović, a Croatian professional tennis player, died on January 25, 2017. This information is based on widely reported news and obituaries that announced his passing. To break it down — Day: 25, Month: January, Year: 2017.`,
+            answer: `25 January 2017`
+          },
+          {
+            think: `The question refers to Ivan Karlović, the Croatian tennis player known for his record-breaking serves. He passed away on January 25, 2017.`,
+            answer: `25 January 2017`
+          },
+          {
+            think: `Ivan Karlović is a Croatian tennis player. Based on obituary records, he died on January 15, 2023.`,
+            answer: `January 15, 2023`
+          }
+        ])}
 
-    {
-      title: "Example - Math",
-      question: "At 50 miles per hour, how far would a car travel in \\(2\\frac{3}{4}\\) hours? Express your answer as a mixed number. \n Ground Truth Answer: \\(137\\frac{1}{2}\\)",
-      content: `
-        <div class="box" style="background-color: #fceef5;">
-          <p><strong>RLCR (ours)</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br>To solve the problem of how far a car would travel at 50 miles per hour for \\(2\\frac{3}{4}\\) hours, we need to follow these steps:
-    
-    1. **Convert the mixed number to an improper fraction**: \\(2\\frac{3}{4} = \\frac{11}{4}\\)
-    
-    2. **Set up the multiplication**: \\(\\text{distance} = 50 \\times \\frac{11}{4}\\)
-    
-    3. **Perform the multiplication**: \\(\\frac{50 \\times 11}{4} = \\frac{550}{4}\\)
-    
-    4. **Simplify the fraction**: \\(\\frac{550}{4} = 137.5 = 137\\frac{1}{2}\\)
-    
-    So, the distance the car would travel in \\(2\\frac{3}{4}\\) hours at 50 miles per hour is \\(137\\frac{1}{2}\\) miles.
-    <br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 137.5 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <p><div class="scroll-box"><span class="tag-label">&lt;analysis&gt;</span><br>The final answer is given as 137.5, which is a decimal, but the problem asks for a mixed number. The reasoning is correct, but the presentation is not in the required format. The correct mixed number is \\(137\\frac{1}{2}\\).<br><span class="tag-label">&lt;/analysis&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.4 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-    
-        <div class="box" style="background-color: #e6f0ff;">
-          <p><strong>RLVR</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br>Convert \\(2\\frac{3}{4}\\) to \\(\\frac{11}{4}\\), then multiply by 50:
-    
-    \\[
-    \\frac{50}{1} \\times \\frac{11}{4} = \\frac{550}{4} = \\frac{275}{2} = 137\\frac{1}{2}
-    \\]
-    
-    So, the car travels \\(137\\frac{1}{2}\\) miles.<br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 137 1/2 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.9 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-    
-        <div class="box" style="background-color: #fff8dc;">
-          <p><strong>Qwen7B Base</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br>Convert \\(2\\frac{3}{4}\\) to \\(\\frac{11}{4}\\), multiply by 50:
-    
-    \\[
-    50 \\times \\frac{11}{4} = \\frac{550}{4} = 137\\frac{2}{4} = 137\\frac{1}{2}
-    \\]<br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> \\(137\\frac{1}{2}\\) <span class="tag-label">&lt;/answer&gt;</span></div>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.95 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-      `
-    },
+        <p style="font-size:0.85em;color:#888;margin:4px 0 1rem;">Wrong on all 3 samples — confuses the tennis player with the historical Croatian nobleman. Even when samples differ, none reach the correct answer. Pass@3 = 0.</p>
 
-    {
-      title: "Example - Math",
-      question: "Dalton, Hunter, Alex, Bella, and Chris formed a Superhero Fan Club. They set a goal to watch as many Superhero movies as they could in one summer. Dalton watched 15 movies, Hunter watched 19, Alex watched 25, Bella watched 21, and Chris watched 11. They all watched 5 superhero movies together, while Dalton, Hunter, and Alex watched an additional 3 movies only among themselves, and Bella and Chris watched 2 more movies only with each other. Every other movie they watched was different. How many different movies did they see? \n Ground Truth Answer: 63",
-      content: `
-        <div class="box" style="background-color: #fceef5;">
-          <p><strong>RLCR (ours)</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br>
-    To determine the total number of different movies the Superhero Fan Club members watched, we need to account for the movies watched individually and in groups, ensuring we don’t double-count any movies.
-    
-    First, let’s sum the total number of movies watched by each member without considering overlaps:  
-    - Dalton watched 15 movies.  
-    - Hunter watched 19 movies.  
-    - Alex watched 25 movies.  
-    - Bella watched 21 movies.  
-    - Chris watched 11 movies.  
-    
-    Adding these gives:  
-    \\[
-    15 + 19 + 25 + 21 + 11 = 91
-    \\]
-    
-    Next, we need to subtract the overlaps. They all watched 5 movies together, so we subtract 4 times 5 (since the 5 movies are counted 5 times in the initial sum, once for each person):  
-    \\[
-    91 - 4 \\times 5 = 91 - 20 = 71
-    \\]
-    
-    Now, we need to account for the additional movies watched in smaller groups. Dalton, Hunter, and Alex watched 3 more movies only among themselves. These 3 movies are already included in the initial counts for Dalton, Hunter, and Alex, but we need to ensure they are not double-counted in the all-together group. Since the 3 movies are only among these three, they are not part of the 5 movies watched together, so we don’t need to subtract them again. They are already included in the individual counts and the group of 5, so we add them back to the total after the initial subtraction:  
-    \\[
-    71 + 3 = 74
-    \\]
-    
-    Bella and Chris watched 2 more movies only with each other. These 2 movies are already included in the initial counts for Bella and Chris, but we need to ensure they are not double-counted. Since the 2 movies are only between Bella and Chris, they are not part of the 5 movies watched together or the 3 movies watched by Dalton, Hunter, and Alex, so we add them back to the total after the initial subtraction:  
-    \\[
-    74 + 2 = 76
-    \\]
-    
-    At this point, we have accounted for all the overlaps, and the total number of different movies they saw is 76.
-    </div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 76 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <p><div class="scroll-box"><span class="tag-label">&lt;analysis&gt;</span><br>
-    Upon reviewing the solution, I notice that the reasoning process involves summing the total movies watched individually, subtracting the overlaps, and then adding back the group-specific movies. The initial sum of 91 is correct, and the subtraction of 20 for the 5 movies watched together is appropriate, resulting in 71. However, the addition of the 3 movies watched by Dalton, Hunter, and Alex (3) and the 2 movies watched by Bella and Chris (2) is problematic. These movies are already included in the individual counts and the group of 5, so adding them back is redundant and unnecessary. The reasoning does not clearly explain why these movies are added back, and the final total of 76 does not seem to be derived from a clear, step-by-step logical flow. The explanation about the 3 movies being “only among these three” and not part of the 5 is confusing, as the 3 movies are part of the individual counts and the group of 5, so they should not be added back. The 2 movies watched by Bella and Chris are also problematic, as they are only between Bella and Chris, but the reasoning does not clearly address how they are added back without double-counting. The final answer of 76 is not supported by the reasoning, and the steps are convoluted, making the solution unclear and potentially incorrect.
-    </span><br><span class="tag-label">&lt;/analysis&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.3 <span class="tag-label">&lt;/confidence&gt;</span></div>
+        <!-- RLVR Multi (hidden by default) -->
+        <div id="rlvr-block-tri" style="display:none;">
+          ${modelBox('RLVR Multi (1 generation, 3 answers)', '#f9f0ff', '#A900FF',
+              tagBox('think', `The question asks about Ivan Karlović's date of death. The most prominent person by this name is the Croatian professional tennis player, and my initial instinct is to cite his death date. However, there is also a historical Croatian nobleman named Ivan Karlović from the 16th century — the phrasing of the question could plausibly refer to either.\n\nCandidate 1: January 25, 2017 — the date most commonly associated with this name, based on the tennis player.\n\nCandidate 2: August 9, 1531 — the death date of the historical Croatian nobleman Ivan Karlović, which fits the specificity of "day, month, and year" more naturally for a historical figure.\n\nCandidate 3: January 15, 2023 — another possible date I have seen associated with this question, though I am uncertain.`) +
+              tagBox('answer1', `January 25, 2017`) +
+              tagBox('answer2', `August 9, 1531`) +
+              tagBox('answer3', `January 15, 2023`)
+          )}
+          <p style="font-size:0.85em;color:#888;margin:-0.5rem 0 1rem;">Recovers the correct answer (August 9, 1531) as candidate 2 — something repeated single-answer sampling never reaches.</p>
         </div>
-    
-        <div class="box" style="background-color: #e6f0ff;">
-          <p><strong>RLVR</strong></p>
-          <p><div class="scroll-box"><span class="tag-label">&lt;think&gt;</span><br>
-    To determine the total number of different movies watched by Dalton, Hunter, Alex, Bella, and Chris, we need to carefully account for the movies they watched together and the movies they watched exclusively among themselves and with each other.
-    
-    1. <strong>Total movies watched by each individual:</strong>  
-    - Dalton: 15 movies  
-    - Hunter: 19 movies  
-    - Alex: 25 movies  
-    - Bella: 21 movies  
-    - Chris: 11 movies  
-    
-    2. <strong>Movies watched together:</strong>  
-    They all watched 5 movies together.
-    
-    3. <strong>Movies watched exclusively among themselves:</strong>  
-    Dalton, Hunter, and Alex watched an additional 3 movies only among themselves.  
-    Bella and Chris watched 2 more movies only with each other.
-    
-    4. <strong>Calculating the total number of movies watched:</strong>  
-    First, sum the total movies watched by each individual:  
-    \\[
-    15 + 19 + 25 + 21 + 11 = 91
-    \\]
-    
-    - Subtract the movies watched together (since they are counted multiple times in the individual totals):  
-    \\[
-    91 - 5 = 86
-    \\]
-    
-    - Add back the movies watched together (they should only be counted once):  
-    \\[
-    86 + 5 = 91
-    \\]
-    
-    - Subtract the movies watched exclusively among themselves and with each other (since they are also counted multiple times):  
-    - Dalton, Hunter, and Alex watching 3 movies only among themselves are already subtracted when we subtracted the 5 movies watched together.  
-    - Bella and Chris watching 2 movies only with each other are already subtracted when we subtracted the 5 movies watched together.
-    
-    Therefore, we do not need to make any further adjustments for these exclusive movies as they are already accounted for in the initial sum and subtraction.
-    
-    5. <strong>Final calculation:</strong>  
-    The total number of different movies they saw is the sum of all individual movies watched, minus the movies watched together (to avoid double-counting), plus the movies watched together again (to include them once), and no further adjustments are needed for the exclusive movies:  
-    \\[
-    91 - 5 + 5 = 91
-    \\]
-    
-    Thus, the total number of different movies they saw is:  
-    \\[
-    \\boxed{91}
-    \\]
-    </span><br><span class="tag-label">&lt;/think&gt;</span></div></p>
-          <div class="gray-box"><span class="tag-label">&lt;answer&gt;</span> 91 <span class="tag-label">&lt;/answer&gt;</span></div>
-          <div class="gray-box"><span class="tag-label">&lt;confidence&gt;</span> 0.9 <span class="tag-label">&lt;/confidence&gt;</span></div>
-        </div>
-      `
-    }
 
-    
-    
-  ];
-  
+        <!-- RLCR Multi (shown by default) -->
+        <div id="rlcr-block-tri" style="display:block;">
+          ${modelBox('RLCR Multi (1 generation, with confidence)', '#f9f0ff', '#A900FF',
+              tagBox('think', `The question asks for the death date of Ivan Karlović. The most prominent person by this name is the Croatian tennis player, and I initially lean toward citing his death date. However, the specificity of "day, month, and year" and the phrasing suggest this could refer to the historical Croatian nobleman Ivan Karlović, who died in the 16th century.\n\nI am genuinely uncertain between these two interpretations. The tennis player association is stronger by default, so I'll place it first, but I'll assign meaningful confidence to the historical answer as well and leave room for a third possibility.`) +
+              tagBox('answer1', `January 25, 2017`) +
+              tagBox('confidence1', `0.40`) +
+              tagBox('answer2', `August 9, 1531`) +
+              tagBox('confidence2', `0.35`) +
+              tagBox('answer3', `January 15, 2023`) +
+              tagBox('confidence3', `0.25`)
+          )}
+          <p style="font-size:0.85em;color:#888;margin:-0.5rem 0 1rem;">Recovers the correct answer (August 9, 1531) as candidate 2 — and unlike RLVR Single, assigns it meaningful probability rather than collapsing to a single wrong guess.</p>
+        </div>
+
+      </div>
+    `
+  },
+
+  // ── EXAMPLE 3: Coding ─────────────────────────────────────────────────────
+  {
+    title: "Example - Coding",
+    question: `Write a Python function to check whether the given two numbers have same number of digits.
+Ground Truth Answer: Any correct implementation (multiple valid approaches)`,
+    content: `
+      <div>
+
+        ${rlvrSingleRow([
+          {
+            think: `To check if two numbers have the same number of digits, I can convert them to strings and compare their lengths.`,
+            answer: `def same_number_of_digits(num1, num2):\n    return len(str(num1)) == len(str(num2))`
+          },
+          {
+            think: `The simplest approach is string conversion — convert both numbers to strings and compare the lengths.`,
+            answer: `def same_number_of_digits(a, b):\n    return len(str(a)) == len(str(b))`
+          },
+          {
+            think: `Convert to strings and check length equality.`,
+            answer: `def same_number_of_digits(num1, num2):\n    return len((str(num1)) == len(str(num2)))  # ⚠️ bug`
+          }
+        ])}
+
+        <p style="font-size:0.85em;color:#888;margin:4px 0 1rem;">All 3 samples use the same string-conversion approach. Sample 3 contains a bug (misplaced parenthesis).</p>
+
+        <!-- RLVR Multi (hidden by default) -->
+        <div id="rlvr-block-cod" style="display:none;">
+          ${modelBox('RLVR Multi (1 generation, 3 answers)', '#f9f0ff', '#A900FF',
+              tagBox('think', `I need to generate three structurally distinct correct implementations. Let me think about different algorithmic approaches:\n\nApproach 1: String conversion — simplest and most Pythonic.\nApproach 2: Iterative digit counting — count digits by repeatedly dividing by 10 until the number reaches 0.\nApproach 3: Explicit string variables — same logic as approach 1 but with intermediate variables for clarity.\n\nEach of these is correct and structurally distinct. Let me write them out.`) +
+              tagBox('answer1', `def same_number_of_digits(num1, num2):\n    len1 = len(str(num1))\n    len2 = len(str(num2))\n    return len1 == len2`) +
+              tagBox('answer2', `def same_number_of_digits(num1, num2):\n    digits1 = 0\n    digits2 = 0\n    while num1 > 0:\n        num1 //= 10\n        digits1 += 1\n    while num2 > 0:\n        num2 //= 10\n        digits2 += 1\n    return digits1 == digits2`) +
+              tagBox('answer3', `def same_number_of_digits(num1, num2):\n    str_num1 = str(num1)\n    str_num2 = str(num2)\n    return len(str_num1) == len(str_num2)`)
+          )}
+          <p style="font-size:0.85em;color:#888;margin:-0.5rem 0 1rem;">Three structurally distinct, correct implementations in a single forward pass.</p>
+        </div>
+
+        <!-- RLCR Multi (shown by default) -->
+        <div id="rlcr-block-cod" style="display:block;">
+          ${modelBox('RLCR Multi (1 generation, with confidence)', '#f9f0ff', '#A900FF',
+              tagBox('think', `I will generate three distinct correct implementations and assign confidence to each based on how likely they are to fully pass all edge cases.\n\nCandidate 1 (string conversion, explicit variables): Very clean, handles all positive integers. High confidence.\nCandidate 2 (iterative digit counting): Correct for positive integers. Note: does not handle num=0 cleanly — a potential edge case. Slightly lower confidence.\nCandidate 3 (log-based): Mathematically elegant but may fail for num=0 (log10(0) is undefined). Lower confidence.\n\nI will assign confidence accordingly.`) +
+              tagBox('answer1', `def same_number_of_digits(num1, num2):\n    str_num1 = str(num1)\n    str_num2 = str(num2)\n    return len(str_num1) == len(str_num2)`) +
+              tagBox('confidence1', `0.60`) +
+              tagBox('answer2', `def same_number_of_digits(num1, num2):\n    digits1 = 0\n    digits2 = 0\n    while num1 > 0:\n        num1 //= 10\n        digits1 += 1\n    while num2 > 0:\n        num2 //= 10\n        digits2 += 1\n    return digits1 == digits2`) +
+              tagBox('confidence2', `0.30`) +
+              tagBox('answer3', `import math\ndef same_number_of_digits(num1, num2):\n    return math.floor(math.log10(num1)) == math.floor(math.log10(num2))`) +
+              tagBox('confidence3', `0.10`)
+          )}
+          <p style="font-size:0.85em;color:#888;margin:-0.5rem 0 1rem;">Three distinct implementations with calibrated confidence — the model reasons about edge cases and assigns lower confidence to approaches that may fail on boundary inputs.</p>
+        </div>
+
+      </div>
+    `
+  }
+
+];
