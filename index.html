@@ -580,9 +580,8 @@
       <ul>
         <li>✨ <strong>Multi-Answer RL substantially improves coverage</strong> over single-answer baselines - recovering correct alternatives that standard RL never surfaces, even with equal total samples.</li>
         <li>✨ <strong>Simply prompting single-answer models to produce multiple answers doesn't work.</strong> Explicit multi-answer training is required.</li>
-        <li>✨ On coding (MBPP), Multi-Answer RL <strong>boosts top-1 accuracy by over 50%</strong> while cutting token usage by more than half.</li>
+        <li>✨ Significantly more token efficient vs sampling multiple times from standard RL. For example: on coding (MBPP), Multi-Answer RL <strong>boosts top-1 accuracy by over 50%</strong> while cutting token usage by more than half.</li>
         <li>✨ <strong>RLCR Multi achieves markedly better calibration than RLVR Multi</strong>, with RLVR Multi exhibiting systematic overconfidence across confidence bins.</li>
-        <li>✨ Multi-Answer training <strong>matches single-answer RL in top-1 calibration</strong> - generating diverse sets does not degrade the quality of the best answer.</li>
       </ul>
  
       <div style="display:flex; gap:16px; margin: 20px 0; align-items:flex-start;">
@@ -672,7 +671,7 @@
   <div class="container">
     <div class="box" style="border: 1px solid #ccc; padding: 1.5rem; position: relative;">
       <a href="#top" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem;">Back to Top</a>
-      <h2 class="title is-3 has-text-centered">Does Multi-Answer RL Know What It Doesn't Know? 🎯</h2>
+      <h2 class="title is-3 has-text-centered">Calibrating Distributions of Answers 🎯</h2>
  
       <p>
         Adding the calibration reward (RLCR) to multi-answer training produces models that attach <strong>meaningful confidence estimates</strong> to each candidate - not just a ranked list, but a genuine distribution. Models are penalized for being confidently wrong and for being unnecessarily uncertain about answers they get right. <strong>RLCR Multi gives you confidence + coverage + efficiency, all in one generation. </strong>
@@ -682,7 +681,7 @@
  
       <div class="image-container" style="text-align: center; margin: 20px 0;">
         <img src="assets/images/calibration_curve.png" alt="Calibration curves on DDXPlus: RLCR Multi vs RLVR Multi" style="max-width: 55%; height: auto;">
-        <p style="font-size:0.85em; color:#888; margin-top: 6px;">Figure 3: Calibration curves on DDXPlus. RLCR-Multi closely tracks the diagonal across confidence bins. RLVR-Multi is systematically overconfident at all confidence levels.</p>
+        <p style="font-size:0.85em; color:#888; margin-top: 6px;">Figure 3: Calibration curves on DDXPlus. RLCR-Multi tracks the diagonal much more closely across confidence binsthan RLVR-Multi, which is systematically overconfident at all confidence levels.</p>
       </div>
  
       <p>
